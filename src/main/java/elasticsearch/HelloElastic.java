@@ -4,16 +4,6 @@ package elasticsearch;
 public class HelloElastic {
     public static final String INDEX = "team";
 
-    /**
-     * Task (a) + (b):
-     * - Create TeamMitglied record (first + last name)
-     * - Bulk index members into the same index
-     * - Query index and print all members using SearchResponse<TeamMitglied>
-     *
-     * Configure connection:
-     * - export ES_API_KEY="..."   (from start-local script output)
-     * - optional: export ES_URL="http://localhost:9200"
-     */
     public static void main(String[] args) throws Exception {
         try (var client = connect()) {
             var members = java.util.List.of(new TeamMitglied("Jayesh", "Daga"));
