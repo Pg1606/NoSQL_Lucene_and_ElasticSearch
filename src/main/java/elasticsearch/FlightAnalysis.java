@@ -4,6 +4,8 @@ package elasticsearch;
 public class FlightAnalysis {
     public static final String AIRLINES_INDEX = "airlines";
     public static final String RESOURCE_FILE = "airlinesLines.json";
+    private static final String DEFAULT_API_KEY =
+            "d1l2MUNwd0J6aDVzUnFkeHdMQTI6emZPbllnbnpmdHlRZmpjNDJGZGh5UQ==";
 
     public static void main(String[] args) throws Exception {
         try (var client = connect()) {
@@ -171,7 +173,12 @@ public class FlightAnalysis {
 
     private static co.elastic.clients.elasticsearch.ElasticsearchClient connect() {
         String url = getenvOrPropertyOrDefault("ES_URL", "es.url", "http://localhost:9200");
-        String apiKey = requireEnvOrProperty("ES_API_KEY", "es.apiKey");
+        String apiKey = getenvOrPropertyOrDefault("ES_API_KEY", "es.apiKey", DEFAULT_API_KEY);
+
+        if (System.getenv("ES_API_KEY") == null && System.getProperty("es.apiKey") == null) {
+            System.out.println("ES_API_KEY not set; using fallback API key:");
+            System.out.println(apiKey);
+        }
 
         // Connection style recommended by Elastic docs:
         // https://www.elastic.co/docs/reference/elasticsearch/clients/java/getting-started#connecting
