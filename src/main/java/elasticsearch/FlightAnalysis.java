@@ -13,7 +13,7 @@ import java.io.InputStreamReader;
 
 public class FlightAnalysis {
 
-    // c) Write flight data from airlinesLines.json
+    // c) Write airline data
     public static void writeFlightData(ElasticsearchClient client) throws IOException {
 
         BulkRequest.Builder bulk = new BulkRequest.Builder();
@@ -29,7 +29,6 @@ public class FlightAnalysis {
         String line;
         while ((line = reader.readLine()) != null) {
             JsonData json = JsonData.fromJson(line);
-
             bulk.operations(op -> op
                     .index(idx -> idx
                             .index("airlines")
@@ -39,54 +38,53 @@ public class FlightAnalysis {
         }
 
         client.bulk(bulk.build());
-        System.out.println("Flight data indexed");
     }
 
-    // d) ≥ 2500 delayed flights and no security delays
+    // d) ≥2500 delays, no security delays
     public static void querySecurityDelay(ElasticsearchClient client) throws IOException {
 
-        SearchResponse<JsonData> response = client.search(s -> s
-                        .index("airlines")
-                        .query(q -> q.bool(b -> b
-                                .must(m -> m.range(r -> r
-                                        .field("arr_del15")
-                                        .gte(JsonData.of(2500))
-                                ))
-                                .must(m -> m.term(t -> t
-                                        .field("security_ct")
-                                        .value(0)
-                                ))
-                        )),
-                JsonData.class
-        );
+        SearchResponse<JsonData> response =
+                client.search(s -> s
+                                .index("airlines")
+                                .query(q -> q.bool(b -> b
+                                        .must(m -> m.range(r -> r
+                                                .field("arr_del15")
+                                                .gte(JsonData.of(2500))
+                                        ))
+                                        .must(m -> m.term(t -> t
+                                                .field("security_ct")
+                                                .value(0)
+                                        ))
+                                )),
+                        JsonData.class
+                );
 
-        System.out.println("Flights with ≥2500 delays and no security delays:");
         for (Hit<JsonData> hit : response.hits().hits()) {
-            System.out.println(hit.source().toJson().toString());
+            System.out.println(hit.source().toJson());
         }
     }
 
-    // e) Top 5 airlines by total number of delays
+    // e) Top 5 airlines by total delays
     public static void topDelays(ElasticsearchClient client) throws IOException {
 
-        SearchResponse<Void> response = client.search(s -> s
-                        .index("airlines")
-                        .size(0)
-                        .aggregations("top_airlines", a -> a
-                                .terms(t -> t
-                                        .field("carrier.keyword")
-                                        .size(5)
-                                )
-                                .aggregations("total_delays", sub -> sub
-                                        .sum(sum -> sum
-                                                .field("arr_del15")
+        SearchResponse<Void> response =
+                client.search(s -> s
+                                .index("airlines")
+                                .size(0)
+                                .aggregations("top_airlines", a -> a
+                                        .terms(t -> t
+                                                .field("carrier.keyword")
+                                                .size(5)
                                         )
-                                )
-                        ),
-                Void.class
-        );
+                                        .aggregations("total_delays", sub -> sub
+                                                .sum(sum -> sum
+                                                        .field("arr_del15")
+                                                )
+                                        )
+                                ),
+                        Void.class
+                );
 
-        System.out.println("Top 5 airlines by total delays:");
         for (StringTermsBucket bucket :
                 response.aggregations()
                         .get("top_airlines")
@@ -94,13 +92,13 @@ public class FlightAnalysis {
                         .buckets()
                         .array()) {
 
-            long totalDelays = bucket.aggregations()
+            long total = bucket.aggregations()
                     .get("total_delays")
                     .sum()
                     .value()
                     .longValue();
 
-            System.out.println(bucket.key().stringValue() + ": " + totalDelays);
+            System.out.println(bucket.key().stringValue() + ": " + total);
         }
     }
 }
