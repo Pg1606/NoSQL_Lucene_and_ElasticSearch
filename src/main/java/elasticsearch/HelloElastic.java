@@ -17,10 +17,12 @@ import java.util.List;
 
 public class HelloElastic {
 
+    // a) TeamMitglied record
     public record TeamMitglied(String firstName, String lastName) {}
 
     public static void main(String[] args) throws IOException {
 
+        // API key printed by start-local
         String apiKey = "PASTE_YOUR_API_KEY_HERE";
 
         RestClient restClient = RestClient.builder(
@@ -34,27 +36,36 @@ public class HelloElastic {
 
         ElasticsearchClient client = new ElasticsearchClient(transport);
 
+        // a) create team members
         List<TeamMitglied> team = List.of(
                 new TeamMitglied("Alice", "Mueller"),
-                new TeamMitglied("Bob", "Schmidt")
+                new TeamMitglied("Bob", "Schmidt"),
+                new TeamMitglied("Charlie", "Weber")
         );
 
+        // a) index team members using BulkRequest
         BulkRequest.Builder bulk = new BulkRequest.Builder();
-        for (TeamMitglied t : team) {
+        for (TeamMitglied member : team) {
             bulk.operations(op -> op
-                    .index(i -> i.index("teammitglieder").document(t))
+                    .index(idx -> idx
+                            .index("teammitglieder")
+                            .document(member)
+                    )
             );
         }
         client.bulk(bulk.build());
 
+        // b) query and output all team members
         SearchResponse<TeamMitglied> response = client.search(s -> s
                         .index("teammitglieder")
                         .query(q -> q.matchAll(m -> m)),
                 TeamMitglied.class
         );
 
+        System.out.println("Team members:");
         for (Hit<TeamMitglied> hit : response.hits().hits()) {
-            System.out.println(hit.source());
+            TeamMitglied t = hit.source();
+            System.out.println(t.firstName() + " " + t.lastName());
         }
 
         transport.close();
