@@ -48,8 +48,10 @@ public class FlightAnalysis {
                                 .index("airlines")
                                 .query(q -> q.bool(b -> b
                                         .must(m -> m.range(r -> r
-                                                .field("arr_del15")
-                                                .gte(JsonData.of(2500))
+                                                .field(f -> f
+                                                        .name("arr_del15")
+                                                        .gte(JsonData.of(2500))
+                                                )
                                         ))
                                         .must(m -> m.term(t -> t
                                                 .field("security_ct")
